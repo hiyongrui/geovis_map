@@ -1,17 +1,32 @@
 <ion-header>
-  <ion-navbar>
-    <ion-title>Home</ion-title>
-  </ion-navbar>
+  <ion-toolbar>
+    <ion-title>
+      Map Tab
+    </ion-title>
+    <ion-buttons end>
+      <button ion-button (click)="currentLocation()">
+        <ion-icon name="pin"></ion-icon>
+      </button>
+    </ion-buttons>
+  </ion-toolbar>
 </ion-header>
 
-<ion-content padding>
-  <h2>Welcome to Ionic!</h2>
-  <p>
-    This starter project comes with simple tabs-based layout for apps
-    that are going to primarily use a Tabbed UI.
-  </p>
-  <p>
-    Take a look at the <code>src/pages/</code> directory to add or change tabs,
-    update any existing page or create new pages.
-  </p>
+<style>
+  #map {
+    padding: 0;
+    margin: 0;
+    height: 80%;
+    width: 100%;
+  }
+</style>
+
+<ion-content>
+  <ion-card class="welcome-card">
+    <ion-card-content>
+      <p>This app shows how use Ionic with the ArcGIS API for JavaScript</p>
+    </ion-card-content>
+  </ion-card>
+
+  <div id="map" #map></div>
+
 </ion-content>
