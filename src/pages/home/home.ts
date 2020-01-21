@@ -21,12 +21,16 @@ export class HomePage {
     await this.platform.ready();
 
     // Load the ArcGIS API for JavaScript modules
-    const [Map, MapView, FeatureLayer, Popup, Locate]: any = await loadModules([
+    const [Map, MapView, FeatureLayer, Popup, Locate, Search, Directions, GraphicsLayer, Graphic]: any = await loadModules([
       'esri/Map',
       'esri/views/MapView',
       'esri/layers/FeatureLayer',
       'esri/widgets/Popup',
-      "esri/widgets/Locate"
+      "esri/widgets/Locate",
+      "esri/widgets/Search",
+      "esri/widgets/Directions",
+      "esri/layers/GraphicsLayer",
+      "esri/Graphic"
     ])
       .catch(err => {
         console.error('ArcGIS: ', err);
@@ -53,7 +57,26 @@ export class HomePage {
 
 
     let customTemplate = {
-      title: "Shopping center: {TRADE_NAME}"
+      title: "Shopping mall: {TRADE_NAME}",
+      content: [
+        {
+          type: "fields",
+          fieldInfos: [
+            {
+              fieldName: "HOUSE_BLK_",
+              label: "Block"
+            },
+            {
+              fieldName: "ROAD_NAME",
+              label: "Road"
+            },
+            {
+              fieldName: "POSTAL_CD",
+              label: "Postal Code"
+            }
+          ]
+        }
+      ]
     }
 
     shoppingMallLayers.popupTemplate = customTemplate;
@@ -62,8 +85,22 @@ export class HomePage {
       view: mapView
     });
 
-    mapView.ui.add(locateBtn, { position: 'top-left'});
+     // Search widget
+     var search = new Search({
+      view: mapView
+    });
+
+    var directionsWidget = new Directions({
+      view: mapView,
+      container: "directionsWidget"
+    });
+
+    mapView.ui.add(locateBtn, {position: 'top-left'});
+    mapView.ui.add(search, {position: 'top-right'});
+    // mapView.ui.add(directionsWidget, {position: 'top-right', index: 2})
+
     map.add(shoppingMallLayers);
+
   }
 
   ngOnInit() {
@@ -73,6 +110,5 @@ export class HomePage {
   currentLocation() {
     console.log("current loc");
   }
-
 
 }
