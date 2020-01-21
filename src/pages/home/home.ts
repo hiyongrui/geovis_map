@@ -85,8 +85,8 @@ export class HomePage {
       view: mapView
     });
 
-     // Search widget
-     var search = new Search({
+    // Search widget
+    var search = new Search({
       view: mapView
     });
 
@@ -95,8 +95,8 @@ export class HomePage {
       container: "directionsWidget"
     });
 
-    mapView.ui.add(locateBtn, {position: 'top-left'});
-    mapView.ui.add(search, {position: 'top-right'});
+    mapView.ui.add(locateBtn, { position: 'top-left' });
+    mapView.ui.add(search, { position: 'top-right' });
     // mapView.ui.add(directionsWidget, {position: 'top-right', index: 2})
 
     map.add(shoppingMallLayers);
