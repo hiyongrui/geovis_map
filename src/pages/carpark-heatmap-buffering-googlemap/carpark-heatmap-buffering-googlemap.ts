@@ -1,9 +1,8 @@
 import { Component, ViewChild, ElementRef, NgZone } from '@angular/core';
-import { NavController, Platform } from 'ionic-angular';
+import { NavController, Platform, Events } from 'ionic-angular';
 import { HttpClient } from '@angular/common/http';
 import { MyService } from '../../providers/carparkService';
 
-declare var L: any;
 
 declare var google;
 
@@ -12,6 +11,7 @@ interface Car {
   carpark_number: string;
   update_datetime: any;
 }
+
 @Component({
   selector: 'page-carpark-heatmap-buffering-googlemap',
   templateUrl: 'carpark-heatmap-buffering-googlemap.html',
@@ -26,17 +26,25 @@ export class CarparkHeatmapBufferingGooglemapPage {
   selectedMarker;
 
   @ViewChild('mapID') mapElement: ElementRef;
-  map: any;
-  heatmap1;
-  heatmap2;
-  heatmap3;
-  heatmap4;
-  constructor(public navCtrl: NavController, public platform: Platform, public http: HttpClient, public service: MyService, public zone: NgZone) {
 
+  map: any;
+  heatmapRed;
+  heatmapYellow;
+  heatmapGreen;
+  heatmapBlue;
+
+  darkMode: boolean;
+
+  constructor(public navCtrl: NavController, public platform: Platform, public http: HttpClient, public service: MyService, public zone: NgZone, public event: Events) {
+    this.event.subscribe("darkMode", darkMode => {
+      console.warn('toggled triggered', darkMode);
+      this.darkMode = darkMode;
+      darkMode ? this.map.setOptions({styles: this.mapStyle}) : this.map.setOptions({styles: []});
+      document.getElementById("legendDivID").style.color = darkMode ? 'rgb(255,255,255)' : 'rgb(25,25,25)';
+    })
   }
 
   ionViewDidEnter() {
-    // this.getGeo()
     this.loadMap();
   }
 
@@ -46,16 +54,14 @@ export class CarparkHeatmapBufferingGooglemapPage {
 
   loadMap() {
 
-    var infowindow = new google.maps.InfoWindow();
-
-    var gradients = {
-      yellow: [
-        'rgba(255, 255, 0, 0)',
-        'rgba(255, 255, 0, 1)'
-      ],
+    let gradients = {
       red: [
         'rgba(255, 0, 0, 0)',
         'rgba(255, 0, 0, 1)'
+      ],
+      yellow: [
+        'rgba(255, 255, 0, 0)',
+        'rgba(255, 255, 0, 1)'
       ],
       green: [
         'rgba(0, 255, 0, 0)',
@@ -67,13 +73,10 @@ export class CarparkHeatmapBufferingGooglemapPage {
       ]
     }
 
-    var array1 = [];
-    var array2 = [];
-    var array3 = [];
-    var array4 = [];
-
-    var allData = [];
-
+    var arrayRed = [];
+    var arrayYellow = [];
+    var arrayGreen = [];
+    var arrayBlue = [];
 
     this.service.getCarParks().then((allCarJSON: Car[]) => {
       let allCarJSONFilteredToday = allCarJSON.filter(x => x.update_datetime >= new Date().toISOString());
@@ -106,26 +109,24 @@ export class CarparkHeatmapBufferingGooglemapPage {
               // console.log(convertedWSG84);
               let newMarker = new google.maps.LatLng(convertedWSG84["latitude"], convertedWSG84["longitude"]);
 
-              // calculatedWeight == 60 ? array1.push({ location: newMarker, weight: calculatedWeight }) :
-              //   calculatedWeight == 2 ? array2.push({ location: newMarker, weight: calculatedWeight }) :
-              //     calculatedWeight == 1.5 ? array3.push({ location: newMarker, weight: calculatedWeight }) : array4.push({ location: newMarker, weight: calculatedWeight })
-
-              allData.push({ location: newMarker, weight: calculatedWeight });
+              // calculatedWeight == 60 ? arrayRed.push({ location: newMarker, weight: calculatedWeight }) :
+              //   calculatedWeight == 2 ? arrayYellow.push({ location: newMarker, weight: calculatedWeight }) :
+              //     calculatedWeight == 1.5 ? arrayGreen.push({ location: newMarker, weight: calculatedWeight }) : arrayBlue.push({ location: newMarker, weight: calculatedWeight })
 
               if (calculatedWeight == 60) {
-                array1.push({ location: newMarker, weight: calculatedWeight });
+                arrayRed.push({ location: newMarker, weight: calculatedWeight });
                 this.createMarker(convertedWSG84["latitude"], convertedWSG84["longitude"], "http://maps.google.com/mapfiles/ms/icons/red-dot.png", thisCar.carpark_info[0]["lots_available"]);
               }
               else if (calculatedWeight == 2) {
-                array2.push({ location: newMarker, weight: calculatedWeight });
+                arrayYellow.push({ location: newMarker, weight: calculatedWeight });
                 this.createMarker(convertedWSG84["latitude"], convertedWSG84["longitude"], "http://maps.google.com/mapfiles/ms/icons/yellow-dot.png", thisCar.carpark_info[0]["lots_available"]);
               }
               else if (calculatedWeight == 1.5) {
-                array3.push({ location: newMarker, weight: calculatedWeight });
+                arrayGreen.push({ location: newMarker, weight: calculatedWeight });
                 this.createMarker(convertedWSG84["latitude"], convertedWSG84["longitude"], "http://maps.google.com/mapfiles/ms/icons/green-dot.png", thisCar.carpark_info[0]["lots_available"]);
               }
               else {
-                array4.push({ location: newMarker, weight: calculatedWeight });
+                arrayBlue.push({ location: newMarker, weight: calculatedWeight });
                 this.createMarker(convertedWSG84["latitude"], convertedWSG84["longitude"], "http://maps.google.com/mapfiles/ms/icons/blue-dot.png", thisCar.carpark_info[0]["lots_available"]);
               }
 
@@ -133,88 +134,62 @@ export class CarparkHeatmapBufferingGooglemapPage {
             });
           }
 
-
         })
 
-        var singapore = new google.maps.LatLng(1.3633449, 103.85641989999999);
+        let singapore = new google.maps.LatLng(1.3633449, 103.85641989999999);
 
         this.map = new google.maps.Map(document.getElementById('mapID'), {
           center: singapore,
           zoom: 10,
           mapTypeId: 'roadmap',
           disableDefaultUI: true,
-          zoomControl: true
+          zoomControl: true,
         });
 
         let legend = this.createLegend();
         this.map.controls[google.maps.ControlPosition.LEFT_BOTTOM].push(legend);
 
-        this.heatmap1 = new google.maps.visualization.HeatmapLayer({
-          data: array1,
+        this.heatmapRed = new google.maps.visualization.HeatmapLayer({
+          data: arrayRed,
           radius: 24,
           opacity: 0.8,
           map: this.map,
         })
-        this.heatmap2 = new google.maps.visualization.HeatmapLayer({
-          data: array2,
+        this.heatmapYellow = new google.maps.visualization.HeatmapLayer({
+          data: arrayYellow,
           radius: 24,
           opacity: 0.8,
           map: this.map,
         })
-        this.heatmap3 = new google.maps.visualization.HeatmapLayer({
-          data: array3,
+        this.heatmapGreen = new google.maps.visualization.HeatmapLayer({
+          data: arrayGreen,
           radius: 24,
           opacity: 0.8,
           map: this.map,
         })
-        this.heatmap4 = new google.maps.visualization.HeatmapLayer({
-          data: array4,
+        this.heatmapBlue = new google.maps.visualization.HeatmapLayer({
+          data: arrayBlue,
           radius: 24,
           opacity: 0.8,
           map: this.map,
         });
 
-        // var heatMapDynamic = new google.maps.visualization.HeatmapLayer({
-        //   data: allData,
-        //   radius: 24,
-        //   opacity: 0.8
-        // });
-
-        // heatMapDynamic.setMap(this.map)
-
-        // heatmap1.set('gradient', heatmap1.get('gradient') ? null : red);
-        // heatmap2.set('gradient', heatmap2.get('gradient') ? null : yellow);
-        // heatmap3.set('gradient', heatmap3.get('gradient') ? null : green);
-        // heatmap4.set('gradient', heatmap4.get('gradient') ? null : blue);
-        this.heatmap1.set('gradient', gradients.red);
-        this.heatmap2.set('gradient', gradients.yellow);
-        this.heatmap3.set('gradient', gradients.green);
-        this.heatmap4.set('gradient', gradients.blue);
-        // heatmap.setMap(this.map);
-
-        // var gradient = [
-        //   'rgba('+Math.round(255*rate)+', '+Math.round(255*(1-rate))+', 0, 0)',
-        //   'rgba('+Math.round(255*rate)+', '+Math.round(255*(1-rate))+', 0, 1)'
-        // ];
-
-
+    
+        this.heatmapRed.set('gradient', gradients.red);
+        this.heatmapYellow.set('gradient', gradients.yellow);
+        this.heatmapGreen.set('gradient', gradients.green);
+        this.heatmapBlue.set('gradient', gradients.blue);
 
         this.map.addListener('zoom_changed', () => {
-          console.error("zoomedd!!", this.map)
           if (this.map.getZoom() > 13) {
-            // console.warn("zoomed mor ethan 13 ", heatmap1);
-            // this.heatmap1.setMap(null)
-            // this.heatmap2.setMap(null)
-            // this.heatmap3.setMap(null)
-            // this.heatmap4.setMap(null)
             this.setHeatMap(null);
             this.showMarkers(true);
             this.selectedMarker && this.calculateMarkers(this.selectedMarker.position);
           }
           else {
-            console.warn("not zoomed");
             this.setHeatMap(this.map);
             this.showMarkers(false);
+            this.currentInfoWindow.close();
           }
         })
       });
@@ -226,10 +201,10 @@ export class CarparkHeatmapBufferingGooglemapPage {
   }
 
   setHeatMap(visible) {
-    this.heatmap1.setMap(visible);
-    this.heatmap2.setMap(visible);
-    this.heatmap3.setMap(visible);
-    this.heatmap4.setMap(visible);
+    this.heatmapRed.setMap(visible);
+    this.heatmapYellow.setMap(visible);
+    this.heatmapGreen.setMap(visible);
+    this.heatmapBlue.setMap(visible);
   }
 
   showMarkers(visible) {
@@ -295,6 +270,7 @@ export class CarparkHeatmapBufferingGooglemapPage {
         console.warn("marker", marker.position);
         this.createCircle(marker.position);
         this.calculateMarkers(marker.position, true);
+        this.currentInfoWindow.close();
       }
     });
   }
@@ -340,19 +316,181 @@ export class CarparkHeatmapBufferingGooglemapPage {
   createLegend() {
     // Set CSS for the control interior.
     var controlText = document.createElement('div');
-    controlText.style.color = 'rgb(25,25,25)';
+    controlText.id = "legendDivID"
+    controlText.style.color = this.darkMode ? 'rgb(255,255,255)' : 'rgb(25,25,25)';
     controlText.style.fontFamily = 'Roboto,Arial,sans-serif';
     controlText.style.fontSize = '12px';
     controlText.style.paddingLeft = '5px';
     controlText.style.paddingRight = '5px';
     controlText.innerHTML = 
-    `<p> <img src="http://maps.google.com/mapfiles/ms/icons/red-dot.png"> Little space </p>
-    <p> <img src="http://maps.google.com/mapfiles/ms/icons/yellow-dot.png"> Moderate space </p>
-    <p> <img src="http://maps.google.com/mapfiles/ms/icons/green-dot.png"> Lots of space </p>
-    <p> <img src="http://maps.google.com/mapfiles/ms/icons/blue-dot.png"> Full </p>
+    `<p> <img src="http://maps.google.com/mapfiles/ms/icons/red-dot.png"> Lots of space </p>
+    <p> <img src="http://maps.google.com/mapfiles/ms/icons/yellow-dot.png"> Moderate space  </p>
+    <p> <img src="http://maps.google.com/mapfiles/ms/icons/green-dot.png"> Little space </p>
+    <p> <img src="http://maps.google.com/mapfiles/ms/icons/blue-dot.png"> Full soon </p>
     `;
-    // controlDiv.appendChild(controlText);
     return controlText;
   }
+
+  mapStyle = [
+    {
+      "elementType": "geometry",
+      "stylers": [
+        {
+          "color": "#242f3e"
+        }
+      ]
+    },
+    {
+      "elementType": "labels.text.fill",
+      "stylers": [
+        {
+          "color": "#746855"
+        }
+      ]
+    },
+    {
+      "elementType": "labels.text.stroke",
+      "stylers": [
+        {
+          "color": "#242f3e"
+        }
+      ]
+    },
+    {
+      "featureType": "administrative.locality",
+      "elementType": "labels.text.fill",
+      "stylers": [
+        {
+          "color": "#d59563"
+        }
+      ]
+    },
+    {
+      "featureType": "poi",
+      "elementType": "labels.text.fill",
+      "stylers": [
+        {
+          "color": "#d59563"
+        }
+      ]
+    },
+    {
+      "featureType": "poi.park",
+      "elementType": "geometry",
+      "stylers": [
+        {
+          "color": "#263c3f"
+        }
+      ]
+    },
+    {
+      "featureType": "poi.park",
+      "elementType": "labels.text.fill",
+      "stylers": [
+        {
+          "color": "#6b9a76"
+        }
+      ]
+    },
+    {
+      "featureType": "road",
+      "elementType": "geometry",
+      "stylers": [
+        {
+          "color": "#38414e"
+        }
+      ]
+    },
+    {
+      "featureType": "road",
+      "elementType": "geometry.stroke",
+      "stylers": [
+        {
+          "color": "#212a37"
+        }
+      ]
+    },
+    {
+      "featureType": "road",
+      "elementType": "labels.text.fill",
+      "stylers": [
+        {
+          "color": "#9ca5b3"
+        }
+      ]
+    },
+    {
+      "featureType": "road.highway",
+      "elementType": "geometry",
+      "stylers": [
+        {
+          "color": "#746855"
+        }
+      ]
+    },
+    {
+      "featureType": "road.highway",
+      "elementType": "geometry.stroke",
+      "stylers": [
+        {
+          "color": "#1f2835"
+        }
+      ]
+    },
+    {
+      "featureType": "road.highway",
+      "elementType": "labels.text.fill",
+      "stylers": [
+        {
+          "color": "#f3d19c"
+        }
+      ]
+    },
+    {
+      "featureType": "transit",
+      "elementType": "geometry",
+      "stylers": [
+        {
+          "color": "#2f3948"
+        }
+      ]
+    },
+    {
+      "featureType": "transit.station",
+      "elementType": "labels.text.fill",
+      "stylers": [
+        {
+          "color": "#d59563"
+        }
+      ]
+    },
+    {
+      "featureType": "water",
+      "elementType": "geometry",
+      "stylers": [
+        {
+          "color": "#17263c"
+        }
+      ]
+    },
+    {
+      "featureType": "water",
+      "elementType": "labels.text.fill",
+      "stylers": [
+        {
+          "color": "#515c6d"
+        }
+      ]
+    },
+    {
+      "featureType": "water",
+      "elementType": "labels.text.stroke",
+      "stylers": [
+        {
+          "color": "#17263c"
+        }
+      ]
+    }
+  ]
 
 }

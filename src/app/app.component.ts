@@ -1,11 +1,8 @@
 import { Component, ViewChild } from '@angular/core';
-import { Nav, Platform } from 'ionic-angular';
+import { Nav, Platform, Events } from 'ionic-angular';
 import { StatusBar } from '@ionic-native/status-bar';
 import { SplashScreen } from '@ionic-native/splash-screen';
 
-import { HomePage } from '../pages/home/home';
-import { ContactPage } from '../pages/contact/contact';
-import { AboutPage } from '../pages/about/about';
 import { CarparkHeatmapBufferingGooglemapPage } from '../pages/carpark-heatmap-buffering-googlemap/carpark-heatmap-buffering-googlemap';
 import { IndoorNavigationMapwizePage } from '../pages/indoor-navigation-mapwize/indoor-navigation-mapwize';
 import { ShoppingMallSearchingRoutingArcgisPage } from '../pages/shopping-mall-searching-routing-arcgis/shopping-mall-searching-routing-arcgis';
@@ -20,13 +17,15 @@ export class MyApp {
 
   pages: Array<{title: string, component: any}>;
 
-  constructor(public platform: Platform, public statusBar: StatusBar, public splashScreen: SplashScreen) {
+  mapToggleColor = false;
+
+  constructor(public platform: Platform, public statusBar: StatusBar, public splashScreen: SplashScreen, public event: Events) {
     this.initializeApp();
 
     // used for an example of ngFor and navigation
     this.pages = [
-      { title: 'Shopping Mall', component: ShoppingMallSearchingRoutingArcgisPage },
-      { title: 'Indoor map', component: IndoorNavigationMapwizePage },
+      { title: 'Shopping Malls', component: ShoppingMallSearchingRoutingArcgisPage },
+      { title: 'Indoor Map', component: IndoorNavigationMapwizePage },
       {title: 'Carparks', component: CarparkHeatmapBufferingGooglemapPage}
     ];
 
@@ -46,4 +45,9 @@ export class MyApp {
     // we wouldn't want the back button to show in this scenario
     this.nav.setRoot(page.component);
   }
+
+  toggleColorInService() {
+    this.event.publish("darkMode", this.mapToggleColor);
+  }
+  
 }

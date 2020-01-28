@@ -4,7 +4,8 @@
 <head>
   <meta charset="UTF-8">
   <title>Ionic App</title>
-  <meta name="viewport" content="viewport-fit=cover, width=device-width, initial-scale=1.0, minimum-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <meta name="viewport"
+    content="viewport-fit=cover, width=device-width, initial-scale=1.0, minimum-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <meta name="format-detection" content="telephone=no">
   <meta name="msapplication-tap-highlight" content="no">
 
@@ -17,7 +18,6 @@
   <meta name="apple-mobile-web-app-status-bar-style" content="black">
 
   <!-- cordova.js required for cordova apps (remove if not needed) -->
-  <!-- <script src="http://maps.google.com/maps/api/js?key=AIzaSyDo1UavyyvH4Xho0g1fP5ignoklkAPrzDY&libraries=visualization,places"></script> -->
   <script src="cordova.js"></script>
 
   <!-- un-comment this code to enable service worker
@@ -31,23 +31,16 @@
 
   <link href="build/main.css" rel="stylesheet">
 
+  <!-- <link href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.0.1/leaflet.css" rel="stylesheet" />
+  <script src="https://cdn-webgl.wrld3d.com/wrldjs/dist/latest/wrld.js"></script> -->
 
-  <link href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.0.1/leaflet.css" rel="stylesheet" />
-  <script src="https://cdn-webgl.wrld3d.com/wrldjs/dist/latest/wrld.js"></script>
+  <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/mapwize-ui@2.4.3"></script>
 
+  <link rel="stylesheet" href="https://js.arcgis.com/4.14/esri/css/main.css">
+  <script src="https://js.arcgis.com/4.14/"></script>
 
-  <!-- <link rel="stylesheet" href="https://unpkg.com/leaflet@1.6.0/dist/leaflet.css" integrity="sha512-xwE/Az9zrjBIphAcBb3F6JVqxf46+CDLwfLMHloNu6KEQCAWi6HcDUbeOfBIptF7tcCzusKFjFw2yuvEpDL9wQ=="
-    crossorigin="" /> -->
-  <!-- Make sure you put this AFTER Leaflet's CSS -->
-  <!-- <script src="https://unpkg.com/leaflet@1.6.0/dist/leaflet.js" integrity="sha512-gZwIG9x3wUXg2hdXF6+rVkLF/0Vi9U8D2Ntg4Ga5I5BZpVkVxlJWbSQtXPSiUTtC0TjtGOmxa1AJPuV0CPthew=="
-    crossorigin=""></script> -->
-    <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/mapwize-ui@2.4.3"></script>
+  <script src="http://maps.google.com/maps/api/js?key=<APIKEY>&libraries=visualization,places,geometry"></script>
 
-    <link rel="stylesheet" href="https://js.arcgis.com/4.14/esri/css/main.css">
-    <script src="https://js.arcgis.com/4.14/"></script>
-  
-    <script src="http://maps.google.com/maps/api/js?key=<APIKEY>&libraries=visualization,places,geometry"></script>
-  
 </head>
 
 <body>
@@ -64,9 +57,6 @@
 
   <!-- The main bundle js is generated during the build process -->
   <script src="build/main.js"></script>
-
-
-
 
 </body>
 

@@ -7,13 +7,17 @@ import { loadModules } from 'esri-loader';
   selector: 'page-shopping-mall-searching-routing-arcgis',
   templateUrl: 'shopping-mall-searching-routing-arcgis.html',
 })
-export class ShoppingMallSearchingRoutingArcgisPage  {
+export class ShoppingMallSearchingRoutingArcgisPage {
 
   constructor(public navCtrl: NavController, public platform: Platform) {
 
   }
 
   @ViewChild('map') mapEl: ElementRef;
+
+  ionViewDidEnter() {
+    this.getGeo();
+  }
 
   async getGeo() {
 
@@ -31,10 +35,9 @@ export class ShoppingMallSearchingRoutingArcgisPage  {
       "esri/widgets/Directions",
       "esri/layers/GraphicsLayer",
       "esri/Graphic"
-    ])
-      .catch(err => {
-        console.error('ArcGIS: ', err);
-      });
+    ]).catch(err => {
+      console.error('ArcGIS loadModules error: ', err);
+    });
 
     console.log('Starting up ArcGIS map');
 
@@ -54,7 +57,6 @@ export class ShoppingMallSearchingRoutingArcgisPage  {
     });
 
     console.warn(shoppingMallLayers);
-
 
     let customTemplate = {
       title: "Shopping mall: {TRADE_NAME}",
@@ -90,10 +92,11 @@ export class ShoppingMallSearchingRoutingArcgisPage  {
       view: mapView
     });
 
-    // var directionsWidget = new Directions({
-    //   view: mapView,
-    //   container: "directionsWidget"
-    // });
+    // Direction widget show below the map, if show inside the map use mapView.ui.add
+    var directionsWidget = new Directions({
+      view: mapView,
+      container: "directionsWidget"
+    });
 
     mapView.ui.add(locateBtn, { position: 'top-left' });
     mapView.ui.add(search, { position: 'top-right' });
@@ -101,15 +104,6 @@ export class ShoppingMallSearchingRoutingArcgisPage  {
 
     map.add(shoppingMallLayers);
 
-  }
-
-  ngOnInit() {
-    this.getGeo();
-  }
-
-  currentLocation() {
-
-    console.log("current loc");
   }
 
 }

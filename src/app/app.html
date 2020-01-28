@@ -10,6 +10,10 @@
             <button menuClose ion-item *ngFor="let p of pages" (click)="openPage(p)">
                 {{p.title}}
             </button>
+            <ion-item text-wrap>
+                <ion-label>Dark Mode for Carparks Google Map (toggle to see changes in real time!)</ion-label>
+                <ion-toggle [(ngModel)]="mapToggleColor" (ionChange)="toggleColorInService()"></ion-toggle>
+            </ion-item>
         </ion-list>
     </ion-content>
 
