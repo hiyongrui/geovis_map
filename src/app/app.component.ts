@@ -16,7 +16,7 @@ import { ShoppingMallSearchingRoutingArcgisPage } from '../pages/shopping-mall-s
 export class MyApp {
   @ViewChild(Nav) nav: Nav;
 
-  rootPage: any = HomePage;
+  rootPage: any = ShoppingMallSearchingRoutingArcgisPage;
 
   pages: Array<{title: string, component: any}>;
 
