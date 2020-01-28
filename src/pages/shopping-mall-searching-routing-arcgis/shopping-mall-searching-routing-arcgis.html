@@ -1,0 +1,35 @@
+<ion-header>
+  <ion-toolbar>
+    <button ion-button menuToggle>
+      <ion-icon name="menu"></ion-icon>
+    </button>
+    <ion-title>
+      Shopping Malls 
+    </ion-title>
+    <ion-buttons end>
+      <button ion-button (click)="currentLocation()">
+        <ion-icon name="pin"></ion-icon>
+      </button>
+    </ion-buttons>
+  </ion-toolbar>
+</ion-header>
+
+<style>
+  #map {
+    height: 80%;
+    width: 100%;
+  }
+</style>
+
+<ion-content>
+  <!-- <ion-card class="welcome-card">
+    <ion-card-content>
+      <p>This app shows how use Ionic with the ArcGIS API for JavaScript</p>
+    </ion-card-content>
+  </ion-card> -->
+
+  <div id="map" #map></div>
+  
+  <div id="directionsWidget"></div>
+
+</ion-content>

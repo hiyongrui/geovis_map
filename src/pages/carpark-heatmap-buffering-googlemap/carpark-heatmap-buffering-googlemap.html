@@ -1,0 +1,38 @@
+<ion-header>
+  <ion-navbar>
+    <button ion-button menuToggle>
+      <ion-icon name="menu"></ion-icon>
+    </button>
+    <!-- <ion-title>
+      Carparks
+    </ion-title> -->
+    <ion-searchbar [(ngModel)]="autocomplete.input" (ionInput)="updateSearchResults()"
+      placeholder="Search for a carpark"></ion-searchbar>
+  </ion-navbar>
+</ion-header>
+
+<style>
+
+</style>
+
+<ion-content>
+
+  <ion-list [hidden]="autocompleteItems.length == 0">
+    <ion-item *ngFor="let item of autocompleteItems" tappable (click)="selectSearchResult(item)">
+      {{ item.description }}
+    </ion-item>
+  </ion-list>
+
+  <ion-item>
+    <ion-range min="0" max="10000" color="secondary" pin="true" snaps="true" step="1000" [(ngModel)]="radiusRange" (ionChange)="selectedMarker && radiusRangeChange()">
+      <ion-label slot="start">0</ion-label>
+      <ion-label slot="end">10000</ion-label>
+    </ion-range>
+  </ion-item>
+
+
+  <!-- <div style="position: relative"> -->
+  <div #mapID id="mapID" style="height: 80%; width: 100%;"></div>
+  <!-- </div> -->
+
+</ion-content>
