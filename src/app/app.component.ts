@@ -1,11 +1,12 @@
 import { Component, ViewChild } from '@angular/core';
-import { Nav, Platform, Events } from 'ionic-angular';
+import { Nav, Platform, Events, ToastController, Toast } from 'ionic-angular';
 import { StatusBar } from '@ionic-native/status-bar';
 import { SplashScreen } from '@ionic-native/splash-screen';
 
 import { CarparkHeatmapBufferingGooglemapPage } from '../pages/carpark-heatmap-buffering-googlemap/carpark-heatmap-buffering-googlemap';
 import { IndoorNavigationMapwizePage } from '../pages/indoor-navigation-mapwize/indoor-navigation-mapwize';
 import { ShoppingMallSearchingRoutingArcgisPage } from '../pages/shopping-mall-searching-routing-arcgis/shopping-mall-searching-routing-arcgis';
+import { MyService } from '../providers/carparkService';
 
 @Component({
   templateUrl: 'app.html'
@@ -17,9 +18,9 @@ export class MyApp {
 
   pages: Array<{title: string, component: any}>;
 
-  mapToggleColor = false;
+  toggle = false;
 
-  constructor(public platform: Platform, public statusBar: StatusBar, public splashScreen: SplashScreen, public event: Events) {
+  constructor(public platform: Platform, public statusBar: StatusBar, public splashScreen: SplashScreen, public event: Events, public service: MyService, public toastController: ToastController) {
     this.initializeApp();
 
     // used for an example of ngFor and navigation
@@ -47,7 +48,21 @@ export class MyApp {
   }
 
   toggleColorInService() {
-    this.event.publish("darkMode", this.mapToggleColor);
+    this.event.publish("darkMode", this.toggle);
+    this.service.darkMode = this.toggle;
+    this.presentToast();
   }
   
+  async presentToast() {
+    let message = this.service.darkMode ? "Enabled" : "Disabled";
+    console.warn("dark mode " + message);
+    let toast = await this.toastController.create({
+      message: message + " Dark Mode, View changes at Carparks Google Map!",
+      duration: 2000,
+      showCloseButton: true,
+      // dismissOnPageChange: true
+    });
+    toast.present();
+  }
+
 }

@@ -9,6 +9,8 @@ import { of } from 'rxjs/observable/of';
 @Injectable()
 export class MyService {
 
+    darkMode: boolean;
+
     constructor(private http: HttpClient) { }
 
     getCarParks() {

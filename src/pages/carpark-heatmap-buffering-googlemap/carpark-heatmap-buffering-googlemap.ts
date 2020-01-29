@@ -39,20 +39,50 @@ export class CarparkHeatmapBufferingGooglemapPage {
     this.event.subscribe("darkMode", darkMode => {
       console.warn('toggled triggered', darkMode);
       this.darkMode = darkMode;
-      darkMode ? this.map.setOptions({styles: this.mapStyle}) : this.map.setOptions({styles: []});
-      document.getElementById("legendDivID").style.color = darkMode ? 'rgb(255,255,255)' : 'rgb(25,25,25)';
+      darkMode ? this.map.setOptions({ styles: this.mapStyle }) : this.map.setOptions({ styles: [] });
+      if (document.getElementById("legendDivID")) document.getElementById("legendDivID").style.color = darkMode ? 'rgb(255,255,255)' : 'rgb(25,25,25)';
     })
   }
-
-  ionViewDidEnter() {
-    this.loadMap();
+  
+  ngOnInit() {
+    console.error("oninit")
+    this.loadData();
   }
-
-  carparksArray = [];
 
   globalMarker = [];
 
-  loadMap() {
+  loadData() {
+
+    this.service.getCarParks().then((allCarJSON: Car[]) => {
+
+      let allCarJSONFilteredToday = allCarJSON.filter(x => x.update_datetime >= new Date().toISOString());
+
+      this.getCarParkData(allCarJSONFilteredToday).then(data => {
+
+        this.convertCarParkCoordinates_loadMap(data);
+
+      });
+    })
+
+  }
+
+  getCarParkData(allCarJSONFilteredToday) {
+    return new Promise(resolve => {
+      this.http.get("https://data.gov.sg/api/action/datastore_search?resource_id=139a3035-e624-4f56-b63f-89ae28d4ae4c&limit=500").subscribe(data => {
+        let promises = [];
+        data["result"]["records"].forEach(element => {
+          let thisCarFound = allCarJSONFilteredToday.find(x => x["carpark_number"] === element["car_park_no"]);
+          if (thisCarFound) {
+            // console.warn("this car found", element)
+            promises.push({ ...thisCarFound, x: element.x_coord, y: element.y_coord });
+          }
+        }) //end of whole for loop
+        resolve(promises);
+      })
+    })
+  }
+
+  convertCarParkCoordinates_loadMap(data) {
 
     let gradients = {
       red: [
@@ -78,126 +108,126 @@ export class CarparkHeatmapBufferingGooglemapPage {
     var arrayGreen = [];
     var arrayBlue = [];
 
-    this.service.getCarParks().then((allCarJSON: Car[]) => {
-      let allCarJSONFilteredToday = allCarJSON.filter(x => x.update_datetime >= new Date().toISOString());
-      this.http.get("https://data.gov.sg/api/action/datastore_search?resource_id=139a3035-e624-4f56-b63f-89ae28d4ae4c&limit=500").subscribe(data => {
-        console.warn("data", data);
-        console.error("result", data["result"]["records"]);
-
-        data["result"]["records"].forEach(element => {
-          // console.log(element)
-          // console.warn("carpark no", element["car_park_no"]);
-          let thisCar = allCarJSONFilteredToday.find(x => x["carpark_number"] === element["car_park_no"]);
-
-          if (thisCar) {
-            // console.error("thiscar", thisCar);
-            // console.warn("lots avail", thisCar.carpark_info[0]["lots_available"])
-            let calculation = thisCar.carpark_info[0]["lots_available"] / thisCar.carpark_info[0]["total_lots"] * 100;
-            // console.warn("calclation", calculation);
-
-            let calculatedWeight = (
-              calculation >= 80 ? 60
-                : (calculation > 70 && calculation < 80) ? 2
-                  : (calculation > 50 && calculation <= 70) ? 1.5
-                    : (calculation > 30 && calculation <= 50) ? 1
-                      : 0.5
-            )
-
-
-            // console.warn("weight", calculatedWeight);
-            this.http.get("https://developers.onemap.sg/commonapi/convert/3414to4326?X=" + element.x_coord + "&Y=" + element.y_coord).subscribe(convertedWSG84 => {
-              // console.log(convertedWSG84);
-              let newMarker = new google.maps.LatLng(convertedWSG84["latitude"], convertedWSG84["longitude"]);
-
-              // calculatedWeight == 60 ? arrayRed.push({ location: newMarker, weight: calculatedWeight }) :
-              //   calculatedWeight == 2 ? arrayYellow.push({ location: newMarker, weight: calculatedWeight }) :
-              //     calculatedWeight == 1.5 ? arrayGreen.push({ location: newMarker, weight: calculatedWeight }) : arrayBlue.push({ location: newMarker, weight: calculatedWeight })
-
-              if (calculatedWeight == 60) {
-                arrayRed.push({ location: newMarker, weight: calculatedWeight });
-                this.createMarker(convertedWSG84["latitude"], convertedWSG84["longitude"], "http://maps.google.com/mapfiles/ms/icons/red-dot.png", thisCar.carpark_info[0]["lots_available"]);
-              }
-              else if (calculatedWeight == 2) {
-                arrayYellow.push({ location: newMarker, weight: calculatedWeight });
-                this.createMarker(convertedWSG84["latitude"], convertedWSG84["longitude"], "http://maps.google.com/mapfiles/ms/icons/yellow-dot.png", thisCar.carpark_info[0]["lots_available"]);
-              }
-              else if (calculatedWeight == 1.5) {
-                arrayGreen.push({ location: newMarker, weight: calculatedWeight });
-                this.createMarker(convertedWSG84["latitude"], convertedWSG84["longitude"], "http://maps.google.com/mapfiles/ms/icons/green-dot.png", thisCar.carpark_info[0]["lots_available"]);
-              }
-              else {
-                arrayBlue.push({ location: newMarker, weight: calculatedWeight });
-                this.createMarker(convertedWSG84["latitude"], convertedWSG84["longitude"], "http://maps.google.com/mapfiles/ms/icons/blue-dot.png", thisCar.carpark_info[0]["lots_available"]);
-              }
-
-
-            });
-          }
-
-        })
-
-        let singapore = new google.maps.LatLng(1.3633449, 103.85641989999999);
-
-        this.map = new google.maps.Map(document.getElementById('mapID'), {
-          center: singapore,
-          zoom: 10,
-          mapTypeId: 'roadmap',
-          disableDefaultUI: true,
-          zoomControl: true,
-        });
-
-        let legend = this.createLegend();
-        this.map.controls[google.maps.ControlPosition.LEFT_BOTTOM].push(legend);
-
-        this.heatmapRed = new google.maps.visualization.HeatmapLayer({
-          data: arrayRed,
-          radius: 24,
-          opacity: 0.8,
-          map: this.map,
-        })
-        this.heatmapYellow = new google.maps.visualization.HeatmapLayer({
-          data: arrayYellow,
-          radius: 24,
-          opacity: 0.8,
-          map: this.map,
-        })
-        this.heatmapGreen = new google.maps.visualization.HeatmapLayer({
-          data: arrayGreen,
-          radius: 24,
-          opacity: 0.8,
-          map: this.map,
-        })
-        this.heatmapBlue = new google.maps.visualization.HeatmapLayer({
-          data: arrayBlue,
-          radius: 24,
-          opacity: 0.8,
-          map: this.map,
-        });
-
-    
-        this.heatmapRed.set('gradient', gradients.red);
-        this.heatmapYellow.set('gradient', gradients.yellow);
-        this.heatmapGreen.set('gradient', gradients.green);
-        this.heatmapBlue.set('gradient', gradients.blue);
-
-        this.map.addListener('zoom_changed', () => {
-          if (this.map.getZoom() > 13) {
-            this.setHeatMap(null);
-            this.showMarkers(true);
-            this.selectedMarker && this.calculateMarkers(this.selectedMarker.position);
-          }
-          else {
-            this.setHeatMap(this.map);
-            this.showMarkers(false);
-            this.currentInfoWindow.close();
-          }
-        })
-      });
-
-      console.warn("load finish");
-
+    let promises = [];
+    data.forEach(element => {
+      promises.push(this.resolveHttpConvertCoordinates(element));
     });
 
+    Promise.all(promises).then(coordinates => {
+      // console.error("vals", coordinates);
+      coordinates.forEach((coordinate, index) => {
+        let thisCar = data[index];
+        thisCar.latitude = coordinate["latitude"];
+        thisCar.longitude = coordinate["longitude"];
+      });
+
+      data.forEach(thisCar => {
+
+        let lotsAvailable = thisCar["carpark_info"][0]["lots_available"];
+        let newMarker = new google.maps.LatLng(thisCar["latitude"], thisCar["longitude"]);
+
+        if (lotsAvailable > 200) {
+          arrayRed.push({ location: newMarker, weight: 30 });
+          this.createMarker(thisCar.latitude, thisCar.longitude, "http://maps.google.com/mapfiles/ms/icons/red-dot.png", lotsAvailable);
+        }
+        else if (lotsAvailable > 50 && lotsAvailable <= 200) {
+          arrayYellow.push({ location: newMarker, weight: 20 });
+          this.createMarker(thisCar["latitude"], thisCar["longitude"], "http://maps.google.com/mapfiles/ms/icons/yellow-dot.png", lotsAvailable);
+        }
+        else if (lotsAvailable > 0 && lotsAvailable <= 10) {
+          arrayGreen.push({ location: newMarker, weight: 1.5 });
+          this.createMarker(thisCar["latitude"], thisCar["longitude"], "http://maps.google.com/mapfiles/ms/icons/green-dot.png", lotsAvailable);
+        }
+        else if (lotsAvailable == 0) {
+          arrayBlue.push({ location: newMarker, weight: 1 });
+          this.createMarker(thisCar["latitude"], thisCar["longitude"], "http://maps.google.com/mapfiles/ms/icons/blue-dot.png", lotsAvailable);
+        }
+
+      });
+
+    }); //end of for loop
+
+    let singapore = new google.maps.LatLng(1.3633449, 103.85641989999999);
+
+    this.map = new google.maps.Map(document.getElementById('mapID'), {
+      center: singapore,
+      zoom: 10,
+      mapTypeId: 'roadmap',
+      disableDefaultUI: true,
+      zoomControl: true,
+      styles: this.service.darkMode && this.mapStyle
+    });
+
+    google.maps.event.trigger(this.map, 'resize')
+
+    let legend = this.createLegend();
+    this.map.controls[google.maps.ControlPosition.LEFT_BOTTOM].push(legend);
+
+    this.heatmapRed = new google.maps.visualization.HeatmapLayer({
+      data: arrayRed,
+      radius: 24,
+      opacity: 0.8,
+      map: this.map,
+      gradient: gradients.red
+    })
+    this.heatmapYellow = new google.maps.visualization.HeatmapLayer({
+      data: arrayYellow,
+      radius: 24,
+      opacity: 0.8,
+      map: this.map,
+      gradient: gradients.yellow
+    })
+    this.heatmapGreen = new google.maps.visualization.HeatmapLayer({
+      data: arrayGreen,
+      radius: 24,
+      opacity: 0.8,
+      map: this.map,
+      gradient: gradients.green
+    })
+    this.heatmapBlue = new google.maps.visualization.HeatmapLayer({
+      data: arrayBlue,
+      radius: 24,
+      opacity: 0.8,
+      map: this.map,
+      gradient: gradients.blue
+    });
+
+    // this.heatmapRed.set('gradient', gradients.red);
+    // this.heatmapYellow.set('gradient', gradients.yellow);
+    // this.heatmapGreen.set('gradient', gradients.green);
+    // this.heatmapBlue.set('gradient', gradients.blue);
+
+    this.map.addListener('zoom_changed', () => {
+      // console.warn("zoomed", this.map.getZoom())
+      if (this.map.getZoom() > 13) {
+        this.setHeatMap(null);
+        this.showMarkers(true);
+        this.selectedMarker && this.calculateMarkers(this.selectedMarker.position);
+      }
+      else {
+        this.setHeatMap(this.map);
+        this.showMarkers(false);
+        this.currentInfoWindow.close();
+      }
+    })
+    console.error('returning carparkcoordinates data', data);
+
+    
+    google.maps.event.addListenerOnce(this.map, 'idle', () => {
+      console.warn("idle");
+      setTimeout(() => {
+        this.map.setZoom(this.map.getZoom());
+      }, 1000);
+    });
+
+  }
+
+  resolveHttpConvertCoordinates(element) {
+    return new Promise(resolve => {
+      this.http.get("https://developers.onemap.sg/commonapi/convert/3414to4326?X=" + element.x + "&Y=" + element.y).subscribe(convertedWSG84 => {
+        resolve(convertedWSG84);
+      })
+    })
   }
 
   setHeatMap(visible) {
@@ -317,16 +347,16 @@ export class CarparkHeatmapBufferingGooglemapPage {
     // Set CSS for the control interior.
     var controlText = document.createElement('div');
     controlText.id = "legendDivID"
-    controlText.style.color = this.darkMode ? 'rgb(255,255,255)' : 'rgb(25,25,25)';
+    controlText.style.color = this.service.darkMode ? 'rgb(255,255,255)' : 'rgb(25,25,25)';
     controlText.style.fontFamily = 'Roboto,Arial,sans-serif';
     controlText.style.fontSize = '12px';
     controlText.style.paddingLeft = '5px';
     controlText.style.paddingRight = '5px';
-    controlText.innerHTML = 
-    `<p> <img src="http://maps.google.com/mapfiles/ms/icons/red-dot.png"> Lots of space </p>
+    controlText.innerHTML =
+      `<p> <img src="http://maps.google.com/mapfiles/ms/icons/red-dot.png"> Lots of space </p>
     <p> <img src="http://maps.google.com/mapfiles/ms/icons/yellow-dot.png"> Moderate space  </p>
     <p> <img src="http://maps.google.com/mapfiles/ms/icons/green-dot.png"> Little space </p>
-    <p> <img src="http://maps.google.com/mapfiles/ms/icons/blue-dot.png"> Full soon </p>
+    <p> <img src="http://maps.google.com/mapfiles/ms/icons/blue-dot.png"> Full </p>
     `;
     return controlText;
   }
@@ -493,4 +523,5 @@ export class CarparkHeatmapBufferingGooglemapPage {
     }
   ]
 
+  
 }
