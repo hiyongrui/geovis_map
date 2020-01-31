@@ -5,7 +5,7 @@ import { MyService } from '../../providers/carparkService';
 
 
 declare var google;
-
+declare var MarkerClusterer;
 interface Car {
   carpark_info: any;
   carpark_number: string;
@@ -35,6 +35,8 @@ export class CarparkHeatmapBufferingGooglemapPage {
 
   darkMode: boolean;
 
+  markerCluster;
+
   constructor(public navCtrl: NavController, public platform: Platform, public http: HttpClient, public service: MyService, public zone: NgZone, public event: Events) {
     this.event.subscribe("darkMode", darkMode => {
       console.warn('toggled triggered', darkMode);
@@ -43,9 +45,8 @@ export class CarparkHeatmapBufferingGooglemapPage {
       if (document.getElementById("legendDivID")) document.getElementById("legendDivID").style.color = darkMode ? 'rgb(255,255,255)' : 'rgb(25,25,25)';
     })
   }
-  
+
   ngOnInit() {
-    console.error("oninit")
     this.loadData();
   }
 
@@ -108,12 +109,12 @@ export class CarparkHeatmapBufferingGooglemapPage {
     var arrayGreen = [];
     var arrayBlue = [];
 
-    let promises = [];
+    let promisesOfCoordinates = [];
     data.forEach(element => {
-      promises.push(this.resolveHttpConvertCoordinates(element));
+      promisesOfCoordinates.push(this.resolveHttpConvertCoordinates(element));
     });
 
-    Promise.all(promises).then(coordinates => {
+    Promise.all(promisesOfCoordinates).then(coordinates => {
       // console.error("vals", coordinates);
       coordinates.forEach((coordinate, index) => {
         let thisCar = data[index];
@@ -134,7 +135,7 @@ export class CarparkHeatmapBufferingGooglemapPage {
           arrayYellow.push({ location: newMarker, weight: 20 });
           this.createMarker(thisCar["latitude"], thisCar["longitude"], "http://maps.google.com/mapfiles/ms/icons/yellow-dot.png", lotsAvailable);
         }
-        else if (lotsAvailable > 0 && lotsAvailable <= 10) {
+        else if (lotsAvailable > 0 && lotsAvailable <= 50) {
           arrayGreen.push({ location: newMarker, weight: 1.5 });
           this.createMarker(thisCar["latitude"], thisCar["longitude"], "http://maps.google.com/mapfiles/ms/icons/green-dot.png", lotsAvailable);
         }
@@ -143,9 +144,32 @@ export class CarparkHeatmapBufferingGooglemapPage {
           this.createMarker(thisCar["latitude"], thisCar["longitude"], "http://maps.google.com/mapfiles/ms/icons/blue-dot.png", lotsAvailable);
         }
 
-      });
+      }); //end of for loop
 
-    }); //end of for loop
+
+      let mcOptions = {maxZoom: 14, styles: [{
+          height: 66,
+          url: "assets/imgs/m3.png",
+          width: 66
+        },
+        {
+          height: 53,
+          url: "assets/imgs/m1.png",
+          width: 53
+        }]
+      }
+      this.markerCluster = new MarkerClusterer(this.map, this.globalMarker, mcOptions);
+      this.markerCluster.setCalculator(function (markers, numStyles) {
+        for (var i = 0; i < markers.length; i++) {
+          let index = (markers[i].getIcon().indexOf("red") > -1 || markers[i].getIcon().indexOf("yellow") > -1) ? 2 : 1
+          return {text: Math.floor(markers.length/2), index: index}
+        }
+      })
+      // { imagePath: 'https://developers.google.com/maps/documentation/javascript/examples/markerclusterer/m', maxZoom: 15 });
+
+      // this.markerCluster.setMap(null);
+      
+    }); //end of promise
 
     let singapore = new google.maps.LatLng(1.3633449, 103.85641989999999);
 
@@ -157,8 +181,6 @@ export class CarparkHeatmapBufferingGooglemapPage {
       zoomControl: true,
       styles: this.service.darkMode && this.mapStyle
     });
-
-    google.maps.event.trigger(this.map, 'resize')
 
     let legend = this.createLegend();
     this.map.controls[google.maps.ControlPosition.LEFT_BOTTOM].push(legend);
@@ -210,13 +232,13 @@ export class CarparkHeatmapBufferingGooglemapPage {
         this.currentInfoWindow.close();
       }
     })
+
     console.error('returning carparkcoordinates data', data);
 
-    
     google.maps.event.addListenerOnce(this.map, 'idle', () => {
       console.warn("idle");
       setTimeout(() => {
-        this.map.setZoom(this.map.getZoom());
+        this.map.setZoom(this.map.getZoom()); //technique to overcome heatmap layer not shown when navigating to the page again till user zoom in/out
       }, 1000);
     });
 
@@ -295,9 +317,9 @@ export class CarparkHeatmapBufferingGooglemapPage {
           map: this.map,
         });
         this.selectedMarker = marker;
-        this.map.setZoom(14);
+        this.map.setZoom(13);
         this.map.panTo(marker.position);
-        console.warn("marker", marker.position);
+        console.warn("marker selected search", marker.position);
         this.createCircle(marker.position);
         this.calculateMarkers(marker.position, true);
         this.currentInfoWindow.close();
@@ -331,15 +353,13 @@ export class CarparkHeatmapBufferingGooglemapPage {
   }
 
   calculateMarkers(searchedPosition, showMarkerIfNotShown?) {
+    let carParkCount = 0;
     this.globalMarker.forEach(thisMarker => {
-      if (showMarkerIfNotShown) {
-        thisMarker.setVisible(true)
-      }
+      showMarkerIfNotShown && thisMarker.setVisible(true);
       let distance = google.maps.geometry.spherical.computeDistanceBetween(thisMarker.getPosition(), searchedPosition);
-      if (distance > this.radiusRange) {
-        thisMarker.setVisible(false);
-      }
+      distance > this.radiusRange ? thisMarker.setVisible(false) : carParkCount++;
     });
+    carParkCount == 0 && this.service.presentToast("No carparks found within buffer radius!")
   }
 
 
@@ -523,5 +543,5 @@ export class CarparkHeatmapBufferingGooglemapPage {
     }
   ]
 
-  
+
 }

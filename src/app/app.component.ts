@@ -50,19 +50,9 @@ export class MyApp {
   toggleColorInService() {
     this.event.publish("darkMode", this.toggle);
     this.service.darkMode = this.toggle;
-    this.presentToast();
-  }
-  
-  async presentToast() {
-    let message = this.service.darkMode ? "Enabled" : "Disabled";
-    console.warn("dark mode " + message);
-    let toast = await this.toastController.create({
-      message: message + " Dark Mode, View changes at Carparks Google Map!",
-      duration: 2000,
-      showCloseButton: true,
-      // dismissOnPageChange: true
-    });
-    toast.present();
+    let status = this.service.darkMode ? "Enabled" : "Disabled";
+    let message = status + " Dark Mode, View changes at Carparks Google Map!";
+    this.service.presentToast(message);
   }
 
 }
